@@ -182,7 +182,7 @@ print(signal.index(receiver))
 from CheeseSignal import Receiver
 ```
 
-#### **`def __init__(self, fn: Callable, *, expected_receive_num: int, auto_remove: bool)`**
+#### **`def __init__(self, signal: Signal, fn: Callable, *, expected_receive_num: int, auto_remove: bool)`**
 
 - **参数**
 
@@ -194,9 +194,17 @@ from CheeseSignal import Receiver
 
 期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
 
+设置值小于`total_receive_num`且`auto_remove is True`，则会立刻删除。
+
 #### **`self.auto_remove: bool`**
 
 是否自动删除响应次数超出期望次数的接收器。
+
+设置为`True`且`is_expired is True`，则会立刻删除。
+
+#### **`self.active: bool`**
+
+是否激活；未激活将忽略信号。
 
 #### **`self.total_receive_num: int`**
 
@@ -206,13 +214,13 @@ from CheeseSignal import Receiver
 
 【只读】 剩余的期望信号接受次数；返回为-1代表无期望信号接受次数。
 
-#### **`self.receivable: bool`**
+#### **`self.is_expired: bool`**
 
-【只读】 当前Receiver是否处于可接收信号状态。
+【只读】 是否过期。
 
-#### **`self.unreceivable: bool`**
+#### **`self.is_unexpired: bool`**
 
-【只读】 当前Receiver是否处于不可接收信号状态。
+【只读】 是否未过期。
 
 #### **`def reset(self)`**
 

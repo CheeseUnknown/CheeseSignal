@@ -1,7 +1,11 @@
-from typing import List, Callable, overload, Any
+from typing import List, Callable, overload, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    class Signal:
+        ...
 
 class Receiver:
-    def __init__(self, fn: Callable, *, expected_receive_num: int, auto_remove: bool):
+    def __init__(self, signal: 'Signal', fn: Callable, *, expected_receive_num: int, auto_remove: bool):
         '''
         - Args
 
@@ -9,10 +13,13 @@ class Receiver:
 
             - auto_remove: 是否自动删除响应次数超出期望次数的接收器。
         '''
+
+        self._signal: 'Signal' = signal
         self.fn: Callable = fn
         self._expected_receive_num: int = expected_receive_num
         self._auto_remove: bool = auto_remove
         self._total_receive_num: int = 0
+        self._active: bool = True
 
     def reset(self):
         '''
@@ -27,6 +34,8 @@ class Receiver:
     def expected_receive_num(self) -> int:
         '''
         期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
+
+        设置值小于`total_receive_num`且`auto_remove is True`，则会立刻删除。
         '''
 
         return self._expected_receive_num
@@ -35,10 +44,15 @@ class Receiver:
     def expected_receive_num(self, value: int):
         self._expected_receive_num = value
 
+        if self._auto_remove and self.is_expired:
+            self._signal.receivers.remove(self)
+
     @property
     def auto_remove(self) -> bool:
         '''
         是否自动删除响应次数超出期望次数的接收器。
+
+        设置为`True`时若该receiver过期，则会立刻删除。
         '''
 
         return self._auto_remove
@@ -46,6 +60,21 @@ class Receiver:
     @auto_remove.setter
     def auto_remove(self, value: bool):
         self._auto_remove = value
+
+        if self._auto_remove and self.is_expired:
+            self._signal.receivers.remove(self)
+
+    @property
+    def active(self) -> bool:
+        '''
+        是否激活；未激活将忽略信号。
+        '''
+
+        return self._active
+
+    @active.setter
+    def active(self, value: bool):
+        self._active = value
 
     @property
     def total_receive_num(self) -> int:
@@ -66,22 +95,22 @@ class Receiver:
         return self.expected_receive_num - self.total_receive_num
 
     @property
-    def receivable(self) -> bool:
+    def is_expired(self) -> bool:
         '''
-        【只读】 当前Receiver是否处于可接收信号状态。
+        【只读】 是否过期。
+        '''
+
+        return not self.is_unexpired
+
+    @property
+    def is_unexpired(self) -> bool:
+        '''
+        【只读】 是否未过期。
         '''
 
         if self.remaining_receive_num == -1:
             return True
         return True if self.remaining_receive_num else False
-
-    @property
-    def unreceivable(self) -> bool:
-        '''
-        【只读】 当前Receiver是否处于不可接收信号状态。
-        '''
-
-        return not self.receivable
 
 class Signal:
     def __init__(self):
@@ -154,7 +183,7 @@ class Signal:
             if receiver.fn == fn:
                 raise ValueError('已有重复的函数接收器')
 
-        self.receivers.append(Receiver(fn, expected_receive_num = expected_receive_num, auto_remove = auto_remove))
+        self.receivers.append(Receiver(self, fn, expected_receive_num = expected_receive_num, auto_remove = auto_remove))
 
     def send(self, *args, **kwargs) -> List[Any]:
         '''
@@ -175,11 +204,11 @@ class Signal:
 
         results = []
         for receiver in self.receivers[:]:
-            if receiver.remaining_receive_num > 0 or receiver.remaining_receive_num == -1:
+            if receiver.active and receiver.is_unexpired:
                 receiver._total_receive_num += 1
                 results.append(receiver.fn(*args, **kwargs))
 
-                if receiver.remaining_receive_num == 0 and receiver.auto_remove:
+                if receiver.is_expired:
                     self.receivers.remove(receiver)
         return results
 
@@ -207,11 +236,11 @@ class Signal:
 
         results = []
         for receiver in self.receivers[:]:
-            if receiver.remaining_receive_num > 0 or receiver.remaining_receive_num == -1:
+            if receiver.active and receiver.is_unexpired:
                 receiver._total_receive_num += 1
                 results.append(await receiver.fn(*args, **kwargs))
 
-                if receiver.remaining_receive_num == 0 and receiver.auto_remove:
+                if receiver.is_expired:
                     self.receivers.remove(receiver)
         return results
 
