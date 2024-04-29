@@ -11,7 +11,7 @@ license-files = { paths = [ "LICENSE" ] }
 authors = [
     { name = "Cheese Unknown", email = "cheese@cheese.ren" }
 ]
-keywords = [ 'API', 'BackEnd' ]
+keywords = [ 'Signal' ]
 
 dependencies = []
 
