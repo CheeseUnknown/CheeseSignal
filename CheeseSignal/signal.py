@@ -122,15 +122,13 @@ class Signal:
         '''
         通过函数注册响应函数。
 
-        ```python
-        from CheeseSignal import Signal
-
-        def receiver(*args, **kwargs):
-            ...
-
-        signal = Signal()
-        signal.connect(receiver)
-        ```
+        >>> from CheeseSignal import Signal
+        >>>
+        >>> def receiver(*args, **kwargs):
+        ...     ...
+        >>>
+        >>> signal = Signal()
+        >>> signal.connect(receiver)
 
         - Args
 
@@ -148,15 +146,13 @@ class Signal:
         '''
         通过装饰器注册响应函数。
 
-        ```python
-        from CheeseSignal import Signal
-
-        signal = Signal()
-
-        @signal.connect()
-        def receiver(*args, **kwargs):
-            ...
-        ```
+        >>> from CheeseSignal import Signal
+        >>>
+        >>> signal = Signal()
+        >>>
+        >>> @signal.connect()
+        >>> def receiver(*args, **kwargs):
+        ...     ...
 
         - Args
 
@@ -189,15 +185,13 @@ class Signal:
         '''
         发送信号。
 
-        ```python
-        from CheeseSignal import Signal
-
-        signal = Signal()
-        signal.send('data1', 'data2', **{
-            'key1': 'value1',
-            'key2': 'value2'
-        })
-        ```
+        >>> from CheeseSignal import Signal
+        >>>
+        >>> signal = Signal()
+        >>> signal.send('data1', 'data2', **{
+        ...     'key1': 'value1',
+        ...     'key2': 'value2'
+        >>> })
         '''
 
         self._total_send_num += 1
@@ -216,20 +210,18 @@ class Signal:
         '''
         在协程环境中发送信号，并请保证所有接收函数都是协程函数。
 
-        ```python
-        import asyncio
-
-        from CheeseSignal import Signal
-
-        async def run_asyncio():
-            signal = Signal()
-            await signal.async_send('data1', 'data2', **{
-                'key1': 'value1',
-                'key2': 'value2'
-            })
-
-        asyncio.run(run_asyncio())
-        ```
+        >>> import asyncio
+        >>>
+        >>> from CheeseSignal import Signal
+        >>>
+        >>> async def run_asyncio():
+        ...     signal = Signal()
+        ...     await signal.async_send('data1', 'data2', **{
+        ...         'key1': 'value1',
+        ...         'key2': 'value2'
+        ...     })
+        >>>
+        >>> asyncio.run(run_asyncio())
         '''
 
         self._total_send_num += 1
@@ -248,16 +240,14 @@ class Signal:
         '''
         断开接收器。
 
-        ```python
-        from CheeseSignal import Signal
-
-        def receiver(*args, **kwargs):
-            ...
-
-        signal = Signal()
-        signal.connect(receiver)
-        signal.disconnect(receiver)
-        ```
+        >>> from CheeseSignal import Signal
+        >>>
+        >>> def receiver(*args, **kwargs):
+        ...     ...
+        >>>
+        >>> signal = Signal()
+        >>> signal.connect(receiver)
+        >>> signal.disconnect(receiver)
 
         - Raise
 
@@ -291,17 +281,15 @@ class Signal:
         '''
         获取接收器。
 
-        ```python
-        from CheeseSignal import Signal
-
-        def receiver(*args, **kwargs):
-            ...
-
-        signal = Signal()
-        signal.connect(receiver)
-
-        print(signal.get_receiver(receiver))
-        ```
+        >>> from CheeseSignal import Signal
+        >>>
+        >>> def receiver(*args, **kwargs):
+        ...     ...
+        >>>
+        >>> signal = Signal()
+        >>> signal.connect(receiver)
+        >>>
+        >>> print(signal.get_receiver(receiver))
 
         - Raise
 
@@ -318,17 +306,15 @@ class Signal:
         '''
         获取接收器的顺序位置。
 
-        ```python
-        from CheeseSignal import Signal
-
-        def receiver(*args, **kwargs):
-            ...
-
-        signal = Signal()
-        signal.connect(receiver)
-
-        print(signal.index(receiver))
-        ```
+        >>> from CheeseSignal import Signal
+        >>>
+        >>> def receiver(*args, **kwargs):
+        ...     ...
+        >>>
+        >>> signal = Signal()
+        >>> signal.connect(receiver)
+        >>>
+        >>> print(signal.index(receiver))
 
         - Raise
 
