@@ -1,14 +1,14 @@
-from typing import List, Callable, overload, Any, TYPE_CHECKING
+import asyncio
+from typing import List, Callable, overload, Any, TYPE_CHECKING, Literal, Tuple
 
 if TYPE_CHECKING:
     class Signal:
         ...
 
 class Receiver:
-    def __init__(self, signal: 'Signal', fn: Callable, *, expected_receive_num: int, auto_remove: bool):
+    def __init__(self, signal: 'Signal', fn: Callable, *, expected_receive_num: int, auto_remove: bool, runType: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT'] = 'ORDERED'):
         '''
         - Args
-
             - expected_receive_num: 期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
 
             - auto_remove: 是否自动删除响应次数超出期望次数的接收器。
@@ -20,6 +20,7 @@ class Receiver:
         self._auto_remove: bool = auto_remove
         self._total_receive_num: int = 0
         self._active: bool = True
+        self._runType: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT'] = runType
 
     def reset(self):
         '''
@@ -112,13 +113,31 @@ class Receiver:
             return True
         return True if self.remaining_receive_num else False
 
+    @property
+    def runType(self) -> Literal['ORDERED', 'CONCURRENT', 'NO_WAIT']:
+        '''
+        【只读】 运行的方式，仅在`async_send`时有效。
+
+        - ORDERED: 按顺序执行，返回结果。
+
+        - CONCURRENT: 并行执行，返回结果。
+
+        - NO_WAIT: 并行执行，不阻塞代码。
+        '''
+
+        return self._runType
+
+    @runType.setter
+    def runType(self, value: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT']):
+        self._runType = value
+
 class Signal:
     def __init__(self):
         self._receivers: List[Receiver] = []
         self._total_send_num: int = 0
 
     @overload
-    def connect(self, fn: Callable, *, expected_receive_num: int = 0, auto_remove: bool = False):
+    def connect(self, fn: Callable, *, expected_receive_num: int = 0, auto_remove: bool = False, runType: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT'] = 'ORDERED'):
         '''
         通过函数注册响应函数。
 
@@ -131,13 +150,11 @@ class Signal:
         >>> signal.connect(receiver)
 
         - Args
-
             - expected_receive_num: 期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
 
             - auto_remove: 是否自动删除响应次数超出期望次数的接收器。
 
         - Raise
-
             - ValueError: 已有重复的函数接收器。
         '''
 
@@ -155,31 +172,29 @@ class Signal:
         ...     ...
 
         - Args
-
             - expected_receive_num: 期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
 
             - auto_remove: 是否自动删除响应次数超出期望次数的接收器。
 
         - Raise
-
             - ValueError: 已有重复的函数接收器。
         '''
 
-    def connect(self, arg1: Callable | None = None, *, expected_receive_num: int = 0, auto_remove: bool = False):
+    def connect(self, arg1: Callable | None = None, *, expected_receive_num: int = 0, auto_remove: bool = False, runType: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT'] = 'ORDERED'):
         if not arg1:
             def wrapper(fn):
-                self._connect(fn, expected_receive_num = expected_receive_num, auto_remove = auto_remove)
+                self._connect(fn, expected_receive_num = expected_receive_num, auto_remove = auto_remove, runType = runType)
                 return fn
             return wrapper
 
-        self._connect(arg1, expected_receive_num = expected_receive_num, auto_remove = auto_remove)
+        self._connect(arg1, expected_receive_num = expected_receive_num, auto_remove = auto_remove, runType = runType)
 
-    def _connect(self, fn: Callable, *, expected_receive_num: int, auto_remove: bool):
+    def _connect(self, fn: Callable, *, expected_receive_num: int, auto_remove: bool, runType: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT']):
         for receiver in self.receivers:
             if receiver.fn == fn:
                 raise ValueError('已有重复的函数接收器')
 
-        self.receivers.append(Receiver(self, fn, expected_receive_num = expected_receive_num, auto_remove = auto_remove))
+        self.receivers.append(Receiver(self, fn, expected_receive_num = expected_receive_num, auto_remove = auto_remove, runType = runType))
 
     def send(self, *args, **kwargs) -> List[Any]:
         '''
@@ -206,7 +221,7 @@ class Signal:
                     self.receivers.remove(receiver)
         return results
 
-    async def async_send(self, *args, **kwargs) -> List[Any]:
+    async def async_send(self, *args, **kwargs) -> Tuple[List[Any], List[Any]]:
         '''
         在协程环境中发送信号，并请保证所有接收函数都是协程函数。
 
@@ -222,19 +237,20 @@ class Signal:
         ...     })
         >>>
         >>> asyncio.run(run_asyncio())
+
+        - Returns
+            返回长度为2的元祖，分别为ORDERED类型和CONCURRENT类型的结果。
         '''
 
         self._total_send_num += 1
+        receivers = [receiver for receiver in self.receivers.copy() if receiver.active and receiver.is_unexpired]
 
-        results = []
-        for receiver in self.receivers[:]:
-            if receiver.active and receiver.is_unexpired:
-                receiver._total_receive_num += 1
-                results.append(await receiver.fn(*args, **kwargs))
+        [asyncio.create_task(receiver.fn(*args, **kwargs)) for receiver in receivers if receiver.runType == 'NO_WAIT']
+        concurrent_tasks = [receiver.fn(*args, **kwargs) for receiver in receivers if receiver.runType == 'CONCURRENT']
+        concurrent_results = await asyncio.gather(*concurrent_tasks) if concurrent_tasks else []
+        ordered_results = [await receiver.fn(*args, **kwargs) for receiver in receivers if receiver.runType == 'ORDERED']
 
-                if receiver.is_expired:
-                    self.receivers.remove(receiver)
-        return results
+        return concurrent_results, ordered_results
 
     def disconnect(self, fn: Callable):
         '''
@@ -250,7 +266,6 @@ class Signal:
         >>> signal.disconnect(receiver)
 
         - Raise
-
             - ValueError: 未找到该函数的接收器。
         '''
 
@@ -292,7 +307,6 @@ class Signal:
         >>> print(signal.get_receiver(receiver))
 
         - Raise
-
             - ValueError: 未找到该函数的接收器。
         '''
 
@@ -317,7 +331,6 @@ class Signal:
         >>> print(signal.index(receiver))
 
         - Raise
-
             - ValueError: 未找到该函数的接收器。
         '''
 
