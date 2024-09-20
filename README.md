@@ -56,7 +56,7 @@ signal = Signal()
 
 【只读】 总计信号发送次数。
 
-#### **`def connect(self, fn: Callable, *, expected_receive_num: int = 0, auto_remove: bool = False)`**
+#### **`def connect(self, fn: Callable, *, expected_receive_num: int = 0, auto_remove: bool = False, runType: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT'] = 'ORDERED')`**
 
 通过函数注册响应函数。
 
@@ -66,11 +66,19 @@ signal = Signal()
 
     - `auto_remove`: 是否自动删除响应次数超出期望次数的接收器。
 
+    - `runType`: 运行的方式，仅在`async_send`时有效。
+
+        - ORDERED: 按顺序执行，返回结果。
+
+        - CONCURRENT: 并行执行，返回结果。
+
+        - NO_WAIT: 并行执行，不阻塞代码。
+
 - **报错**
 
     - `ValueError`: 已有重复的函数接收器。
 
-#### **`def connect(self, *, expected_receive_num: int = 0, auto_remove: bool = False)`**
+#### **`def connect(self, *, expected_receive_num: int = 0, auto_remove: bool = False, runType: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT'] = 'ORDERED')`**
 
 通过装饰器注册响应函数。
 
@@ -79,6 +87,14 @@ signal = Signal()
     - `expected_receive_num`: 期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
 
     - `auto_remove`: 是否自动删除响应次数超出期望次数的接收器。
+
+    - `runType`: 运行的方式，仅在`async_send`时有效。
+
+        - ORDERED: 按顺序执行，返回结果。
+
+        - CONCURRENT: 并行执行，返回结果。
+
+        - NO_WAIT: 并行执行，不阻塞代码。
 
 - **报错**
 
@@ -182,13 +198,21 @@ print(signal.index(receiver))
 from CheeseSignal import Receiver
 ```
 
-#### **`def __init__(self, signal: Signal, fn: Callable, *, expected_receive_num: int, auto_remove: bool)`**
+#### **`def __init__(self, signal: Signal, fn: Callable, *, expected_receive_num: int, auto_remove: bool, runType: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT'] = 'ORDERED')`**
 
 - **参数**
 
     - `expected_receive_num`: 期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
 
     - `auto_remove`: 是否自动删除响应次数超出期望次数的接收器。
+
+    - `runType`: 运行的方式，仅在`async_send`时有效。
+
+        - ORDERED: 按顺序执行，返回结果。
+
+        - CONCURRENT: 并行执行，返回结果。
+
+        - NO_WAIT: 并行执行，不阻塞代码。
 
 #### **`self.expected_receive_num: int`**
 
@@ -221,6 +245,16 @@ from CheeseSignal import Receiver
 #### **`self.is_unexpired: bool`**
 
 【只读】 是否未过期。
+
+#### **`self.runType: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT']`**
+
+【只读】 运行的方式，仅在`async_send`时有效。
+
+- ORDERED: 按顺序执行，返回结果。
+
+- CONCURRENT: 并行执行，返回结果。
+
+- NO_WAIT: 并行执行，不阻塞代码。
 
 #### **`def reset(self)`**
 

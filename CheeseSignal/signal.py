@@ -12,6 +12,13 @@ class Receiver:
             - expected_receive_num: 期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
 
             - auto_remove: 是否自动删除响应次数超出期望次数的接收器。
+
+            - runType: 运行的方式，仅在`async_send`时有效。
+                - ORDERED: 按顺序执行，返回结果。
+
+                - CONCURRENT: 并行执行，返回结果。
+
+                - NO_WAIT: 并行执行，不阻塞代码。
         '''
 
         self._signal: 'Signal' = signal
@@ -154,6 +161,13 @@ class Signal:
 
             - auto_remove: 是否自动删除响应次数超出期望次数的接收器。
 
+            - runType: 运行的方式，仅在`async_send`时有效。
+                - ORDERED: 按顺序执行，返回结果。
+
+                - CONCURRENT: 并行执行，返回结果。
+
+                - NO_WAIT: 并行执行，不阻塞代码。
+
         - Raise
             - ValueError: 已有重复的函数接收器。
         '''
@@ -175,6 +189,13 @@ class Signal:
             - expected_receive_num: 期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
 
             - auto_remove: 是否自动删除响应次数超出期望次数的接收器。
+
+            - runType: 运行的方式，仅在`async_send`时有效。
+                - ORDERED: 按顺序执行，返回结果。
+
+                - CONCURRENT: 并行执行，返回结果。
+
+                - NO_WAIT: 并行执行，不阻塞代码。
 
         - Raise
             - ValueError: 已有重复的函数接收器。
