@@ -271,6 +271,11 @@ class Signal:
         concurrent_results = await asyncio.gather(*concurrent_tasks) if concurrent_tasks else []
         ordered_results = [await receiver.fn(*args, **kwargs) for receiver in receivers if receiver.runType == 'ORDERED']
 
+        for receiver in receivers:
+            receiver._total_receive_num += 1
+            if receiver.is_expired:
+                self.receivers.remove(receiver)
+
         return concurrent_results, ordered_results
 
     def disconnect(self, fn: Callable):
