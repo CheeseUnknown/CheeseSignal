@@ -170,9 +170,9 @@ print(signal.get_receiver(receiver))
 
     - `ValueError`: 未找到该函数的接收器。
 
-#### **`def index(self, fn: Callable) -> index`**
+#### **`def index(self, fn: Callable) -> int`**
 
-获取接收器的顺序位置。
+获取接收器的顺序位置；若`runType != 'ORDERED'`，则为-1。
 
 ```python
 from CheeseSignal import Signal

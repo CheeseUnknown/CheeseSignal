@@ -12,13 +12,6 @@ class Receiver:
             - expected_receive_num: 期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
 
             - auto_remove: 是否自动删除响应次数超出期望次数的接收器。
-
-            - runType: 运行的方式，仅在`async_send`时有效。
-                - ORDERED: 按顺序执行，返回结果。
-
-                - CONCURRENT: 并行执行，返回结果。
-
-                - NO_WAIT: 并行执行，不阻塞代码。
         '''
 
         self._signal: 'Signal' = signal
@@ -160,16 +153,6 @@ class Signal:
             - expected_receive_num: 期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
 
             - auto_remove: 是否自动删除响应次数超出期望次数的接收器。
-
-            - runType: 运行的方式，仅在`async_send`时有效。
-                - ORDERED: 按顺序执行，返回结果。
-
-                - CONCURRENT: 并行执行，返回结果。
-
-                - NO_WAIT: 并行执行，不阻塞代码。
-
-        - Raise
-            - ValueError: 已有重复的函数接收器。
         '''
 
     @overload
@@ -189,16 +172,6 @@ class Signal:
             - expected_receive_num: 期望接受信号的次数，超过该次数则不再响应信号；0为无限次。
 
             - auto_remove: 是否自动删除响应次数超出期望次数的接收器。
-
-            - runType: 运行的方式，仅在`async_send`时有效。
-                - ORDERED: 按顺序执行，返回结果。
-
-                - CONCURRENT: 并行执行，返回结果。
-
-                - NO_WAIT: 并行执行，不阻塞代码。
-
-        - Raise
-            - ValueError: 已有重复的函数接收器。
         '''
 
     def connect(self, arg1: Callable | None = None, *, expected_receive_num: int = 0, auto_remove: bool = False, runType: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT'] = 'ORDERED'):
@@ -211,9 +184,8 @@ class Signal:
         self._connect(arg1, expected_receive_num = expected_receive_num, auto_remove = auto_remove, runType = runType)
 
     def _connect(self, fn: Callable, *, expected_receive_num: int, auto_remove: bool, runType: Literal['ORDERED', 'CONCURRENT', 'NO_WAIT']):
-        for receiver in self.receivers:
-            if receiver.fn == fn:
-                raise ValueError('已有重复的函数接收器')
+        if any(receiver.fn == fn for receiver in self.receivers):
+            raise ValueError('已有重复的函数接收器')
 
         self.receivers.append(Receiver(self, fn, expected_receive_num = expected_receive_num, auto_remove = auto_remove, runType = runType))
 
@@ -231,6 +203,9 @@ class Signal:
         '''
 
         self._total_send_num += 1
+
+        if not self.receivers:
+            return []
 
         results = []
         for receiver in self.receivers[:]:
@@ -264,6 +239,10 @@ class Signal:
         '''
 
         self._total_send_num += 1
+
+        if not self.receivers:
+            return [], []
+
         receivers = [receiver for receiver in self.receivers.copy() if receiver.active and receiver.is_unexpired]
 
         [asyncio.create_task(receiver.fn(*args, **kwargs)) for receiver in receivers if receiver.runType == 'NO_WAIT']
@@ -344,7 +323,7 @@ class Signal:
 
     def index(self, fn: Callable) -> int:
         '''
-        获取接收器的顺序位置。
+        获取接收器的顺序位置；若`runType != 'ORDERED'`，则为-1。
 
         >>> from CheeseSignal import Signal
         >>>
@@ -360,11 +339,9 @@ class Signal:
             - ValueError: 未找到该函数的接收器。
         '''
 
-        i = 0
-        for receiver in self.receivers:
+        for i, receiver in enumerate(self.receivers):
             if receiver.fn == fn:
-                return i
-            i += 1
+                return i + 1 if receiver.runType == 'ORDERED' else -1
 
         raise ValueError('未找到该函数的接收器')
 
