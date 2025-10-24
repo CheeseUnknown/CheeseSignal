@@ -248,13 +248,12 @@ def handler():
         '''
 
     def connect(self, arg1: Callable | str | None = None, *args, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, runType: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receiveNum_expected: int = 0, autoRemove: bool = False):
-        def decorator(fn: Callable):
-            self._connect(fn, arg1, index = index, insert = insert, runType = runType, receiveNum_expected = receiveNum_expected, autoRemove = autoRemove)
-            return fn
-
         if callable(arg1):
             self._connect(arg1, *args, index = index, insert = insert, runType = runType, receiveNum_expected = receiveNum_expected, autoRemove = autoRemove)
         else:
+            def decorator(fn: Callable):
+                self._connect(fn, arg1, index = index, insert = insert, runType = runType, receiveNum_expected = receiveNum_expected, autoRemove = autoRemove)
+                return fn
             return decorator
 
     @overload
