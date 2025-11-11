@@ -3,73 +3,73 @@ from typing import Callable, Iterable, overload, Literal
 from collections import OrderedDict
 
 class Receiver:
-    __slots__ = ('_key', 'fn', 'runType', '_receiveNum_expected', 'autoRemove', '_receiveNum')
+    __slots__ = ('_key', 'fn', 'run_type', '_receive_num_expected', 'auto_remove', '_receive_num')
 
-    def __init__(self, fn: Callable, key: str | None = None, *, runType: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receiveNum_expected: int = 0, autoRemove: bool = False):
+    def __init__(self, fn: Callable, key: str | None = None, *, run_type: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receive_num_expected: int = 0, auto_remove: bool = False):
         '''
         - Args
             - fn: 接收函数
             - key: 若不设置则自动生成一个uuid格式的字符串
-            - runType: 运行方式
+            - run_type: 运行方式
                 - SEQUENTIAL: 顺序执行，等待函数执行完成后再执行下一个函数
                 - PARALLEL: 并行执行，等待所有函数执行完成后再继续
                 - NO_BLOCK: 非阻塞执行，函数在后台执行，不等待函数执行完成
-            - receiveNum_expected: 期望接收总数
-            - autoRemove: 是否在达到期望接收总数后自动移除接收器
+            - receive_num_expected: 期望接收总数
+            - auto_remove: 是否在达到期望接收总数后自动移除接收器
         '''
 
         self._key: str = key or str(uuid.uuid4())
         self.fn: Callable = fn
-        self.runType: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = runType
+        self.run_type: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = run_type
         '''
         运行方式
         - SEQUENTIAL: 顺序执行，等待函数执行完成后再执行下一个函数
         - PARALLEL: 并行执行，等待所有函数执行完成后再继续
         - NO_BLOCK: 非阻塞执行，函数在后台执行，不等待函数执行完成
         '''
-        self._receiveNum_expected: int = receiveNum_expected
+        self._receive_num_expected: int = receive_num_expected
         ''' 期望接收总数 '''
-        self.autoRemove: bool = autoRemove
+        self.auto_remove: bool = auto_remove
         ''' 是否在达到期望接收总数后自动移除接收器 '''
 
-        self._receiveNum: int = 0
+        self._receive_num: int = 0
         ''' 接收总数 '''
 
     def reset(self):
         ''' 重置统计数据 '''
 
-        self._receiveNum = 0
+        self._receive_num = 0
 
     @property
     def key(self) -> str:
         return self._key
 
     @property
-    def receiveNum(self) -> int:
+    def receive_num(self) -> int:
         ''' 接收总数 '''
 
-        return self._receiveNum
+        return self._receive_num
 
     @property
-    def receiveNum_expected(self) -> int:
+    def receive_num_expected(self) -> int:
         ''' 期望接收总数 '''
 
-        return self._receiveNum_expected
+        return self._receive_num_expected
 
     @property
-    def receiveNum_remaining(self) -> int | None:
+    def receive_num_remaining(self) -> int | None:
         ''' 剩余接收总数 '''
 
-        return self._receiveNum_expected - self._receiveNum if self._receiveNum_expected > 0 else None
+        return self._receive_num_expected - self._receive_num if self._receive_num_expected > 0 else None
 
     @property
     def is_active(self) -> bool:
         ''' 是否处于激活状态 '''
 
-        return self._receiveNum_expected == 0 or self.receiveNum_remaining > 0
+        return self._receive_num_expected == 0 or self.receive_num_remaining > 0
 
 class Signal:
-    __slots__ = ('receivers', '_sendNum')
+    __slots__ = ('receivers', '_send_num')
 
     def __init__(self):
         '''
@@ -116,11 +116,11 @@ from CheeseSignal import Signal
 
 signal = Signal()
 
-@signal.connect(receiveNum_expected = 3)
+@signal.connect(receive_num_expected = 3)
 def handle_1():
     print('Handler 1 executed')
 
-@signal.connect(receiveNum_expected = 3, autoRemove = True)
+@signal.connect(receive_num_expected = 3, auto_remove = True)
 def handle_2():
     print('Handler 2 executed')
 
@@ -133,18 +133,18 @@ if __name__ == '__main__':
 
         self.receivers: OrderedDict[str, Receiver] = OrderedDict()
         ''' 连接的接收器'''
-        self._sendNum: int = 0
+        self._send_num: int = 0
         ''' 发送总数 '''
 
     @overload
-    def getReceiver(self, key: str) -> Receiver | None:
+    def get_receiver(self, key: str) -> Receiver | None:
         ''' 获取接收器 '''
 
     @overload
-    def getReceiver(self, fn: Callable) -> Receiver | None:
+    def get_receiver(self, fn: Callable) -> Receiver | None:
         ''' 获取接收器 '''
 
-    def getReceiver(self, arg: str | Callable) -> Receiver | None:
+    def get_receiver(self, arg: str | Callable) -> Receiver | None:
         if type(arg) == str:
             return self.receivers.get(arg, None)
         elif callable(arg):
@@ -152,11 +152,11 @@ if __name__ == '__main__':
                 if receiver.fn == arg:
                     return receiver
 
-    def _connect(self, fn: Callable, key: str | None = None, *, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, runType: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receiveNum_expected: int = 0, autoRemove: bool = False):
+    def _connect(self, fn: Callable, key: str | None = None, *, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, run_type: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receive_num_expected: int = 0, auto_remove: bool = False):
         if key in self.receivers:
             raise ValueError(f'Receiver "{key}" already exists')
 
-        receiver = Receiver(fn, key, runType = runType, receiveNum_expected = receiveNum_expected, autoRemove = autoRemove)
+        receiver = Receiver(fn, key, run_type = run_type, receive_num_expected = receive_num_expected, auto_remove = auto_remove)
         items = list(self.receivers.items())
         if index > -1:
             items.insert(index, (receiver.key, receiver))
@@ -168,7 +168,7 @@ if __name__ == '__main__':
                 if key not in self.receivers:
                     raise ValueError(f'Receiver "{key}" does not exist')
             elif callable(insert[0]):
-                _receiver = self.getReceiver(insert[0])
+                _receiver = self.get_receiver(insert[0])
                 if not _receiver:
                     raise ValueError(f'Receiver "{insert[0]}" does not exist')
                 key = _receiver.key
@@ -188,20 +188,20 @@ if __name__ == '__main__':
             self.receivers[receiver.key] = receiver
 
     @overload
-    def connect(self, fn: Callable, key: str | None = None, *, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, runType: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receiveNum_expected: int = 0, autoRemove: bool = False):
+    def connect(self, fn: Callable, key: str | None = None, *, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, run_type: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receive_num_expected: int = 0, auto_remove: bool = False):
         '''
         连接接收器
 
         - Args
             - key: 接收器键值，若不设置则自动生成一个uuid格式的字符串
-            - runType: 运行类型
+            - run_type: 运行类型
                 - SEQUENTIAL: 顺序执行，等待函数执行完成后再执行下一个函数
                 - PARALLEL: 并行执行，等待所有函数执行完成后再继续
                 - NO_BLOCK: 非阻塞执行，函数在后台执行，不等待函数执行完成
-            - receiveNum_expected: 期望接收总数
-            - autoRemove: 是否在达到期望接收总数后自动移除接收器
-            - index: 插入位置索引（仅对runType为SEQUENTIAL的接收器有效）
-            - insert: 插入位置；若设置index，则忽略此参数（仅对runType为SEQUENTIAL的接收器有效）
+            - receive_num_expected: 期望接收总数
+            - auto_remove: 是否在达到期望接收总数后自动移除接收器
+            - index: 插入位置索引（仅对run_type为SEQUENTIAL的接收器有效）
+            - insert: 插入位置；若设置index，则忽略此参数（仅对run_type为SEQUENTIAL的接收器有效）
                 - BEFORE: 插入到指定接收器之前
                 - AFTER: 插入到指定接收器之后
 
@@ -218,20 +218,20 @@ signal.connect(handler)
         '''
 
     @overload
-    def connect(self, key: str | None = None, *, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, runType: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receiveNum_expected: int = 0, autoRemove: bool = False):
+    def connect(self, key: str | None = None, *, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, run_type: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receive_num_expected: int = 0, auto_remove: bool = False):
         '''
         连接接收器
 
         - Args
             - key: 接收器键值，若不设置则自动生成一个uuid格式的字符串
-            - runType: 运行类型
+            - run_type: 运行类型
                 - SEQUENTIAL: 顺序执行，等待函数执行完成后再执行下一个函数
                 - PARALLEL: 并行执行，等待所有函数执行完成后再继续
                 - NO_BLOCK: 非阻塞执行，函数在后台执行，不等待函数执行完成
-            - receiveNum_expected: 期望接收总数
-            - autoRemove: 是否在达到期望接收总数后自动移除接收器
-            - index: 插入位置索引（仅对runType为SEQUENTIAL的接收器有效）
-            - insert: 插入位置；若设置index，则忽略此参数（仅对runType为SEQUENTIAL的接收器有效）
+            - receive_num_expected: 期望接收总数
+            - auto_remove: 是否在达到期望接收总数后自动移除接收器
+            - index: 插入位置索引（仅对run_type为SEQUENTIAL的接收器有效）
+            - insert: 插入位置；若设置index，则忽略此参数（仅对run_type为SEQUENTIAL的接收器有效）
                 - BEFORE: 插入到指定接收器之前
                 - AFTER: 插入到指定接收器之后
 
@@ -247,12 +247,12 @@ def handler():
 ```
         '''
 
-    def connect(self, arg1: Callable | str | None = None, *args, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, runType: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receiveNum_expected: int = 0, autoRemove: bool = False):
+    def connect(self, arg1: Callable | str | None = None, *args, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, run_type: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receive_num_expected: int = 0, auto_remove: bool = False):
         if callable(arg1):
-            self._connect(arg1, *args, index = index, insert = insert, runType = runType, receiveNum_expected = receiveNum_expected, autoRemove = autoRemove)
+            self._connect(arg1, *args, index = index, insert = insert, run_type = run_type, receive_num_expected = receive_num_expected, auto_remove = auto_remove)
         else:
             def decorator(fn: Callable):
-                self._connect(fn, arg1, index = index, insert = insert, runType = runType, receiveNum_expected = receiveNum_expected, autoRemove = autoRemove)
+                self._connect(fn, arg1, index = index, insert = insert, run_type = run_type, receive_num_expected = receive_num_expected, auto_remove = auto_remove)
                 return fn
             return decorator
 
@@ -280,7 +280,7 @@ def handler():
             if arg.key in self.receivers:
                 del self.receivers[arg.key]
 
-    def disconnectAll(self):
+    def disconnect_all(self):
         ''' 断开所有接收器 '''
 
         self.receivers.clear()
@@ -288,7 +288,7 @@ def handler():
     def reset(self):
         ''' 重置统计数据 '''
 
-        self._sendNum = 0
+        self._send_num = 0
         for receiver in self.receivers.values():
             receiver.reset()
 
@@ -326,28 +326,28 @@ def handler():
         if type(arg) == str:
             self.send([arg], **kwargs)
         elif isinstance(arg, Iterable):
-            sequential_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].runType == 'SEQUENTIAL' and self.receivers[key].is_active]
+            sequential_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'SEQUENTIAL' and self.receivers[key].is_active]
             if sequential_receivers:
                 for receiver in sequential_receivers:
-                    self._sendHandle(receiver, **kwargs)
+                    self._send_handle(receiver, **kwargs)
 
-            parallel_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].runType == 'PARALLEL' and self.receivers[key].is_active]
+            parallel_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'PARALLEL' and self.receivers[key].is_active]
             if parallel_receivers:
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    concurrent.futures.as_completed([executor.submit(self._sendHandle, receiver, **kwargs) for receiver in parallel_receivers])
+                    concurrent.futures.as_completed([executor.submit(self._send_handle, receiver, **kwargs) for receiver in parallel_receivers])
 
-            noBlock_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].runType == 'NO_BLOCK' and self.receivers[key].is_active]
+            noBlock_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'NO_BLOCK' and self.receivers[key].is_active]
             if noBlock_receivers:
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     for receiver in noBlock_receivers:
-                        executor.submit(self._sendHandle, receiver, **kwargs)
+                        executor.submit(self._send_handle, receiver, **kwargs)
         else:
             self.send(self.receivers.keys(), **kwargs)
 
-    def _sendHandle(self, receiver: Receiver, **kwargs):
+    def _send_handle(self, receiver: Receiver, **kwargs):
         receiver.fn(*kwargs.get('args', ()), **kwargs.get('kwargs', {}))
-        receiver._receiveNum += 1
-        if receiver.autoRemove and not receiver.is_active:
+        receiver._receive_num += 1
+        if receiver.auto_remove and not receiver.is_active:
             self.disconnect(receiver.key)
 
     @overload
@@ -384,30 +384,30 @@ def handler():
         if type(arg) == str:
             await self.async_send([arg], **kwargs)
         elif isinstance(arg, Iterable):
-            sequential_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].runType == 'SEQUENTIAL' and self.receivers[key].is_active]
+            sequential_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'SEQUENTIAL' and self.receivers[key].is_active]
             if sequential_receivers:
                 for receiver in sequential_receivers:
-                    await self._async_sendHandle(receiver, **kwargs)
+                    await self._async_send_handle(receiver, **kwargs)
 
-            parallel_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].runType == 'PARALLEL' and self.receivers[key].is_active]
+            parallel_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'PARALLEL' and self.receivers[key].is_active]
             if parallel_receivers:
-                await asyncio.gather(*[asyncio.create_task(self._async_sendHandle(receiver, **kwargs)) for receiver in parallel_receivers])
+                await asyncio.gather(*[asyncio.create_task(self._async_send_handle(receiver, **kwargs)) for receiver in parallel_receivers])
 
-            noBlock_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].runType == 'NO_BLOCK' and self.receivers[key].is_active]
+            noBlock_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'NO_BLOCK' and self.receivers[key].is_active]
             if noBlock_receivers:
                 for receiver in noBlock_receivers:
-                    asyncio.create_task(self._async_sendHandle(receiver, **kwargs))
+                    asyncio.create_task(self._async_send_handle(receiver, **kwargs))
         else:
             await self.async_send(self.receivers.keys(), **kwargs)
 
-    async def _async_sendHandle(self, receiver: Receiver, **kwargs):
+    async def _async_send_handle(self, receiver: Receiver, **kwargs):
         await receiver.fn(*kwargs.get('args', ()), **kwargs.get('kwargs', {}))
-        receiver._receiveNum += 1
-        if receiver.autoRemove and receiver.receiveNum_remaining == 0:
+        receiver._receive_num += 1
+        if receiver.auto_remove and receiver.receive_num_remaining == 0:
             self.disconnect(receiver.key)
 
     @property
-    def sendNum(self) -> int:
+    def send_num(self) -> int:
         ''' 发送总数 '''
 
-        return self._sendNum
+        return self._send_num

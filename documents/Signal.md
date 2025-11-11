@@ -8,19 +8,19 @@ from CheeseSignal import Signal
 
 连接的接收器
 
-## **`self.sendNum: int`**
+## **`self.send_num: int`**
 
 发送总数
 
-## **`def getReceiver(self, key: str) -> Receiver | None`**
+## **`def get_receiver(self, key: str) -> Receiver | None`**
 
 获取接收器
 
-## **`def getReceiver(self, fn: Callable) -> Receiver | None`**
+## **`def get_receiver(self, fn: Callable) -> Receiver | None`**
 
 获取接收器
 
-## **`def connect(self, fn: Callable, key: str | None = None, *, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, runType: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receiveNum_expected: int = 0, autoRemove: bool = False)`**
+## **`def connect(self, fn: Callable, key: str | None = None, *, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, run_type: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receive_num_expected: int = 0, auto_remove: bool = False)`**
 
 ```python
 from CheeseSignal import Signal
@@ -40,7 +40,7 @@ signal.connect(handler)
 
         接收器键值，若不设置则自动生成一个uuid格式的字符串
 
-    - **runType**
+    - **run_type**
 
         运行类型
 
@@ -56,21 +56,21 @@ signal.connect(handler)
 
             非阻塞执行，函数在后台执行，不等待函数执行完成
 
-    - **receiveNum_expected**
+    - **receive_num_expected**
 
         期望接收总数
 
-    - **autoRemove**
+    - **auto_remove**
 
         是否在达到期望接收总数后自动移除接收器
 
     - **index**
 
-        插入位置索引（仅对runType为SEQUENTIAL的接收器有效）
+        插入位置索引（仅对run_type为SEQUENTIAL的接收器有效）
 
     - **insert**
 
-        插入位置；若设置index，则忽略此参数（仅对runType为SEQUENTIAL的接收器有效）
+        插入位置；若设置index，则忽略此参数（仅对run_type为SEQUENTIAL的接收器有效）
 
         - **BEFORE**
 
@@ -80,7 +80,7 @@ signal.connect(handler)
 
             插入到指定接收器之后
 
-## **`def connect(self, key: str | None = None, *, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, runType: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receiveNum_expected: int = 0, autoRemove: bool = False)`**
+## **`def connect(self, key: str | None = None, *, index: int = -1, insert: tuple[str | Callable | Receiver, Literal['BEFORE', 'AFTER']] | None = None, run_type: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receive_num_expected: int = 0, auto_remove: bool = False)`**
 
 ```python
 from CheeseSignal import Signal
@@ -100,7 +100,7 @@ def handler():
 
         接收器键值，若不设置则自动生成一个uuid格式的字符串
 
-    - **runType**
+    - **run_type**
 
         运行类型
 
@@ -116,21 +116,21 @@ def handler():
 
             非阻塞执行，函数在后台执行，不等待函数执行完成
 
-    - **receiveNum_expected**
+    - **receive_num_expected**
 
         期望接收总数
 
-    - **autoRemove**
+    - **auto_remove**
 
         是否在达到期望接收总数后自动移除接收器
 
     - **index**
 
-        插入位置索引（仅对runType为SEQUENTIAL的接收器有效）
+        插入位置索引（仅对run_type为SEQUENTIAL的接收器有效）
 
     - **insert**
 
-        插入位置；若设置index，则忽略此参数（仅对runType为SEQUENTIAL的接收器有效）
+        插入位置；若设置index，则忽略此参数（仅对run_type为SEQUENTIAL的接收器有效）
 
         - **BEFORE**
 
@@ -152,7 +152,7 @@ def handler():
 
 断开接收器
 
-## **`def disconnectAll(self)`**
+## **`def disconnect_all(self)`**
 
 断开所有接收器
 

@@ -51,11 +51,11 @@ from CheeseSignal import Signal
 
 signal = Signal()
 
-@signal.connect(receiveNum_expected = 3)
+@signal.connect(receive_num_expected = 3)
 def handle_1():
     print('Handler 1 executed')
 
-@signal.connect(receiveNum_expected = 3, autoRemove = True)
+@signal.connect(receive_num_expected = 3, auto_remove = True)
 def handle_2():
     print('Handler 2 executed')
 

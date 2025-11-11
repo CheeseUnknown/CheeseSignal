@@ -6,7 +6,7 @@
 from CheeseSignal import Receiver
 ```
 
-## **`def __init__(self, fn: Callable, key: str | None = None, *, runType: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receiveNum_expected: int = 0, autoRemove: bool = False)`**
+## **`def __init__(self, fn: Callable, key: str | None = None, *, run_type: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK'] = 'SEQUENTIAL', receive_num_expected: int = 0, auto_remove: bool = False)`**
 
 - **Args**
 
@@ -18,7 +18,7 @@ from CheeseSignal import Receiver
 
         接收器键值，若不设置则自动生成一个uuid格式的字符串
 
-    - **runType**
+    - **run_type**
 
         运行类型
 
@@ -34,15 +34,15 @@ from CheeseSignal import Receiver
 
             非阻塞执行，函数在后台执行，不等待函数执行完成
 
-    - **receiveNum_expected**
+    - **receive_num_expected**
 
         期望接收总数
 
-    - **autoRemove**
+    - **auto_remove**
 
         是否在达到期望接收总数后自动移除接收器
 
-## **`self.runType: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK']`**
+## **`self.run_type: Literal['SEQUENTIAL', 'PARALLEL', 'NO_BLOCK']`**
 
 运行方式
 
@@ -58,19 +58,19 @@ from CheeseSignal import Receiver
 
     非阻塞执行，函数在后台执行，不等待函数执行完成
 
-## **`self.receiveNum_expected: int`**
+## **`self.receive_num_expected: int`**
 
 期望接收总数
 
-## **`self.receiveNum: int`**
+## **`self.receive_num: int`**
 
 接收总数
 
-## **`self.autoRemove: bool`**
+## **`self.auto_remove: bool`**
 
 是否在达到期望接收总数后自动移除接收器
 
-## **`self.receiveNum_remaining: int`**
+## **`self.receive_num_remaining: int`**
 
 剩余接收总数
 
