@@ -1,4 +1,4 @@
-import uuid, concurrent.futures, asyncio
+import uuid, concurrent.futures, asyncio, threading
 from typing import Callable, Iterable, overload, Literal
 from collections import OrderedDict
 
@@ -323,26 +323,30 @@ def handler():
         '''
 
     def send(self, arg: str | list[str] | None = None, **kwargs):
-        if type(arg) == str:
-            self.send([arg], **kwargs)
-        elif isinstance(arg, Iterable):
-            sequential_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'SEQUENTIAL' and self.receivers[key].is_active]
-            if sequential_receivers:
-                for receiver in sequential_receivers:
-                    self._send_handle(receiver, **kwargs)
+        if arg is None:
+            arg = self.receivers.keys()
+        elif type(arg) == str:
+            arg = [arg]
 
-            parallel_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'PARALLEL' and self.receivers[key].is_active]
-            if parallel_receivers:
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    concurrent.futures.as_completed([executor.submit(self._send_handle, receiver, **kwargs) for receiver in parallel_receivers])
+        self._send_num += 1
 
-            noBlock_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'NO_BLOCK' and self.receivers[key].is_active]
-            if noBlock_receivers:
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    for receiver in noBlock_receivers:
-                        executor.submit(self._send_handle, receiver, **kwargs)
-        else:
-            self.send(self.receivers.keys(), **kwargs)
+        sequential_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'SEQUENTIAL' and self.receivers[key].is_active]
+        if sequential_receivers:
+            for receiver in sequential_receivers:
+                self._send_handle(receiver, **kwargs)
+
+        parallel_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'PARALLEL' and self.receivers[key].is_active]
+        if parallel_receivers:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(parallel_receivers)) as executor:
+                futures = [executor.submit(self._send_handle, receiver, **kwargs) for receiver in parallel_receivers]
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+
+        noBlock_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'NO_BLOCK' and self.receivers[key].is_active]
+        if noBlock_receivers:
+            for receiver in noBlock_receivers:
+                thread = threading.Thread(target=self._send_handle, args = (receiver,), kwargs = kwargs, daemon = True)
+                thread.start()
 
     def _send_handle(self, receiver: Receiver, **kwargs):
         receiver.fn(*kwargs.get('args', ()), **kwargs.get('kwargs', {}))
@@ -381,24 +385,26 @@ def handler():
         '''
 
     async def async_send(self, arg: str | list[str] | None = None, **kwargs):
-        if type(arg) == str:
-            await self.async_send([arg], **kwargs)
-        elif isinstance(arg, Iterable):
-            sequential_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'SEQUENTIAL' and self.receivers[key].is_active]
-            if sequential_receivers:
-                for receiver in sequential_receivers:
-                    await self._async_send_handle(receiver, **kwargs)
+        if arg is None:
+            arg = self.receivers.keys()
+        elif type(arg) == str:
+            arg = [arg]
 
-            parallel_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'PARALLEL' and self.receivers[key].is_active]
-            if parallel_receivers:
-                await asyncio.gather(*[asyncio.create_task(self._async_send_handle(receiver, **kwargs)) for receiver in parallel_receivers])
+        self._send_num += 1
 
-            noBlock_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'NO_BLOCK' and self.receivers[key].is_active]
-            if noBlock_receivers:
-                for receiver in noBlock_receivers:
-                    asyncio.create_task(self._async_send_handle(receiver, **kwargs))
-        else:
-            await self.async_send(self.receivers.keys(), **kwargs)
+        sequential_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'SEQUENTIAL' and self.receivers[key].is_active]
+        if sequential_receivers:
+            for receiver in sequential_receivers:
+                await self._async_send_handle(receiver, **kwargs)
+
+        parallel_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'PARALLEL' and self.receivers[key].is_active]
+        if parallel_receivers:
+            await asyncio.gather(*[asyncio.create_task(self._async_send_handle(receiver, **kwargs)) for receiver in parallel_receivers])
+
+        noBlock_receivers = [self.receivers[key] for key in arg if key in self.receivers and self.receivers[key].run_type == 'NO_BLOCK' and self.receivers[key].is_active]
+        if noBlock_receivers:
+            for receiver in noBlock_receivers:
+                asyncio.create_task(self._async_send_handle(receiver, **kwargs))
 
     async def _async_send_handle(self, receiver: Receiver, **kwargs):
         await receiver.fn(*kwargs.get('args', ()), **kwargs.get('kwargs', {}))
